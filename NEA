@@ -1,0 +1,26 @@
+import tkinter as tk
+from tkinter import messagebox
+import sqlite3
+import hashlib
+
+def hash_password(password):
+    #passwords are hashed using SHA-256 before being stored, improving secutiry
+    return hashlib.sha256(password.encode()).hexdigest()
+
+db = sqlite3.connect("powerlifting.db")
+
+#a cursor allows us to execute SQL commands
+cursor = db.cursor()
+
+#this SQL command creates a table called 'users'
+#IF NOT EXISTS prevents the table from being created multiple times
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE,
+    password TEXT
+)
+""")
+
+db.commit()
+db.close()

@@ -4,9 +4,50 @@ import sqlite3
 import hashlib
 
 def hash_password(password):
-    #passwords are hashed using SHA-256 before being stored, improving secutiry
+    #passwords are hashed using SHA-256 before being stored, improving its secutiry
     return hashlib.sha256(password.encode()).hexdigest()
 
+
+
+
+def register():
+
+    username = enter_username.get()
+    password = enter_password.get()
+    #takes what the user typed
+
+    if len(password) < 8:
+        messagebox.showerror("error", "Please enter a password that is at least 8 characters")
+        #ensures that password entered is 8 characters long
+        return
+
+    hashed_password = hash_password(password)
+    #makes the password secure via hashing
+
+    db = sqlite3.connect("powerlifting.db")#opens the database
+    cursor = db.cursor()#this is used to run SQL commands
+
+    try:#makes sure code doesnt crash if error occurs
+        cursor.execute(
+            "INSERT INTO users (username, password) VALUES (?, ?)",#adds a new user with placeholders for safety
+            (username, hashed_password)#actual values inserted
+        )
+
+        db.commit()#saves the new user
+
+        messagebox.showinfo("Success", "Your account has been created")#confirms to the user that their account was created
+
+    except sqlite3.IntegrityError:#runs if there is an error in the try block of code
+        messagebox.showerror("Error", "The username entered already exists")
+
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+
+    db.close()#closes the database
+
+
+
+    
 db = sqlite3.connect("powerlifting.db")
 
 #a cursor allows us to execute SQL commands
@@ -24,3 +65,22 @@ CREATE TABLE IF NOT EXISTS users (
 
 db.commit()
 db.close()
+
+
+
+
+window = tk.Tk()
+window.title("Powerlifting Tracker")
+window.geometry("400x300")
+
+tk.Label(window, text="Username").pack()
+enter_username = tk.Entry(window)
+enter_username.pack()
+
+tk.Label(window, text="Password").pack()
+enter_password = tk.Entry(window, show="*")
+enter_password.pack()
+
+tk.Button(window, text = "register", command = register).pack(pady=5)
+
+window.mainloop()

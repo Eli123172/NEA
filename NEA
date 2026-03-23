@@ -44,10 +44,52 @@ def register():
         messagebox.showerror("Error", str(e))
 
     db.close()#closes the database
-
-
-
     
+    
+    
+def login():
+    
+    username = enter_username.get()#gets the username inputted into the box
+    password = hash_password(enter_password.get())#gets the inputted password and hashes is so it matches the stored one
+    
+    db = sqlite3.connect("powerlifting.db")#opens database
+    cursor = db.cursor()#creates a cursor to run the sql comands
+    
+    cursor.execute(#starts the command
+        "SELECT * FROM users WHERE username=? AND password=?",#looks for a user where both password and usernae match
+        (username, password)
+    )#ends command
+    
+    result = cursor.fetchone()#gets thye first matching result, if there isnt any match then reurns none
+    
+    db.close()#closes database
+    
+    if result:#checks if matching user exists
+        messagebox.showinfo("Login", "Login successful")#shows that it was successful
+        window.withdraw()#hides the login window
+        open_navigation()#opens the navigation page
+    else:#runs if no match exists
+        messagebox.showerror("Error", "Invalid username or password")#shows that it was unsuccessful
+
+
+
+def open_navigation():
+    
+    nav = tk.Toplevel()#creates a new window
+    
+    nav.title("Navigation page")#sets the title of the window
+    nav.geometry("400x300")#sets the proportions and size of window
+    
+    tk.Label(nav, text="Main Menu").pack(pady=10)#creates window title
+    
+    tk.Button(nav, text="View Used Programs").pack(pady=5)#creates a button for navigation
+    tk.Button(nav, text="View Videos").pack(pady=5)#creates a button for navigation
+    tk.Button(nav, text="View Provided Programs").pack(pady=5)#creates a button for navigation
+    tk.Button(nav, text="Account Details").pack(pady=5)#creates a button for navigation
+    tk.Button(nav, text="Help").pack(pady=5)#creates a button for navigation
+
+
+
 db = sqlite3.connect("powerlifting.db")
 
 #a cursor allows us to execute SQL commands
@@ -82,5 +124,6 @@ enter_password = tk.Entry(window, show="*")
 enter_password.pack()
 
 tk.Button(window, text = "register", command = register).pack(pady=5)
+tk.Button(window, text="Login", command=login).pack(pady=5)
 
 window.mainloop()

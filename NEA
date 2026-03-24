@@ -9,7 +9,6 @@ def hash_password(password):
 
 
 
-
 def register():
 
     username = enter_username.get()
@@ -80,13 +79,45 @@ def open_navigation():
     nav.title("Navigation page")#sets the title of the window
     nav.geometry("400x300")#sets the proportions and size of window
     
-    tk.Label(nav, text="Main Menu").pack(pady=10)#creates window title
+    tk.Label(nav, text="Main Menu", font=("Arial", 14)).pack(pady=10)#creates window title
     
-    tk.Button(nav, text="View Used Programs").pack(pady=5)#creates a button for navigation
+    tk.Button(nav, text="View Used Programs", command=open_used_programs).pack(pady=5)#creates a button for navigation
     tk.Button(nav, text="View Videos").pack(pady=5)#creates a button for navigation
     tk.Button(nav, text="View Provided Programs").pack(pady=5)#creates a button for navigation
     tk.Button(nav, text="Account Details").pack(pady=5)#creates a button for navigation
     tk.Button(nav, text="Help").pack(pady=5)#creates a button for navigation
+
+
+
+def open_used_programs():
+
+    used = tk.Toplevel()#opens a new window
+    used.title("Workout program")
+    used.geometry("400x400")
+
+    tk.Label(used, text="Workout Program", font=("Arial", 14)).pack(pady=10)#displays the title in title font
+
+    #Squat:
+    tk.Label(used, text="Squat").pack()#shows the name of the exercise
+    tk.Label(used, text ="Target: 3 sets, 3 reps, RPE 8").pack()#shows what the user is aiming for
+
+    squat_entry = tk.Entry(used)#creates an input box for what they did in the gym
+    squat_entry.pack()#displays the input box
+
+    #Bench Press:
+    tk.Label(used, text="Bench Press").pack()
+    tk.Label(used, text="Target: 5 sets, 5 reps, RPE 9").pack()
+
+    bench_entry = tk.Entry(used)
+    bench_entry.pack()
+
+    #Deadlift:
+    tk.Label(used, text="Deadlift").pack()
+    tk.Label(used, text="Target: 3 sets, 2 reps, RPE 8").pack()
+
+    deadlift_entry = tk.Entry(used)
+    deadlift_entry.pack()
+    
 
 
 

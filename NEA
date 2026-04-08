@@ -3,6 +3,14 @@ from tkinter import messagebox
 import sqlite3
 import hashlib
 
+BG_COLOUR = "#57C3D9"#outer background
+PANEL_COLOUR = "#6DADDB"#inner box
+TEXT_COLOUR = "black"
+FONT = ("Calibri", 12)#normal text
+TITLE_FONT = ("Calibri", 18)#headings
+
+
+
 def hash_password(password):
     #passwords are hashed using SHA-256 before being stored, improving its secutiry
     return hashlib.sha256(password.encode()).hexdigest()
@@ -76,16 +84,21 @@ def open_navigation():
     
     nav = tk.Toplevel()#creates a new window
     
-    nav.title("Navigation page")#sets the title of the window
+    nav.title("Navigation")#sets the title of the window
     nav.geometry("400x300")#sets the proportions and size of window
     
-    tk.Label(nav, text="Main Menu", font=("Arial", 14)).pack(pady=10)#creates window title
+    nav.configure(bg=BG_COLOUR)
     
-    tk.Button(nav, text="View Used Programs", command=open_used_programs).pack(pady=5)#creates a button for navigation
-    tk.Button(nav, text="View Videos").pack(pady=5)#creates a button for navigation
-    tk.Button(nav, text="View Provided Programs").pack(pady=5)#creates a button for navigation
-    tk.Button(nav, text="Account Details").pack(pady=5)#creates a button for navigation
-    tk.Button(nav, text="Help").pack(pady=5)#creates a button for navigation
+    panel = tk.Frame(nav, bg=PANEL_COLOUR, padx=40, pady=30)
+    panel.pack(pady=40)
+    
+    tk.Label(nav, text="Main Menu", bg=PANEL_COLOUR, font=TITLE_FONT).pack(pady=10)#creates window title
+    
+    tk.Button(panel, text="Your Workout", command=open_used_programs).pack(pady=8)
+    tk.Button(panel, text="Video Examples").pack(pady=8)
+    tk.Button(panel, text="Provided Programs").pack(pady=8)
+    tk.Button(panel, text="Account Details").pack(pady=8)
+    tk.Button(panel, text="Help").pack(pady=8)#creates buttons for navigation
 
 
 
@@ -136,6 +149,26 @@ CREATE TABLE IF NOT EXISTS users (
 )
 """)
 
+#programs table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS programs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT
+)
+""")
+
+#exercises table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS exercises (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    program_id INTEGER,
+    name TEXT,
+    sets INTEGER,
+    reps INTEGER,
+    rpe INTEGER
+)
+""")
+
 db.commit()
 db.close()
 
@@ -145,16 +178,22 @@ db.close()
 window = tk.Tk()
 window.title("Powerlifting Tracker")
 window.geometry("400x300")
+window.configure(bg=BG_COLOUR)#sets background colour
 
-tk.Label(window, text="Username").pack()
-enter_username = tk.Entry(window)
+panel = tk.Frame(window, bg=PANEL_COLOUR, padx=40, pady=30)
+panel.pack(expand=True)
+
+tk.Label(panel, text="Sign In / Create Account", bg=PANEL_COLOUR, font=TITLE_FONT).pack(pady=10)
+
+tk.Label(panel, text="Username", bg=PANEL_COLOUR, fg="black", font=FONT).pack()
+enter_username = tk.Entry(panel)
 enter_username.pack()
 
-tk.Label(window, text="Password").pack()
-enter_password = tk.Entry(window, show="*")
+tk.Label(panel, text="Password", bg=PANEL_COLOUR).pack()
+enter_password = tk.Entry(panel, show="*")
 enter_password.pack()
 
-tk.Button(window, text = "register", command = register).pack(pady=5)
-tk.Button(window, text="Login", command=login).pack(pady=5)
+tk.Button(panel, text="Register", command=register).pack(pady=8)
+tk.Button(panel, text="Login", command=login).pack(pady=5)
 
 window.mainloop()

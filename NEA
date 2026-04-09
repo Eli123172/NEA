@@ -94,7 +94,7 @@ def open_navigation():
     
     tk.Label(nav, text="Main Menu", bg=PANEL_COLOUR, font=TITLE_FONT).pack(pady=10)#creates window title
     
-    tk.Button(panel, text="Your Workout", command=open_used_programs).pack(pady=8)
+    tk.Button(panel, text="Your Workout", command=open_program_selection).pack(pady=8)
     tk.Button(panel, text="Video Examples").pack(pady=8)
     tk.Button(panel, text="Provided Programs").pack(pady=8)
     tk.Button(panel, text="Account Details").pack(pady=8)
@@ -105,32 +105,87 @@ def open_navigation():
 def open_used_programs():
 
     used = tk.Toplevel()#opens a new window
-    used.title("Workout program")
-    used.geometry("400x400")
+    used.title("Workout program")#window title
+    used.geometry("400x400")#size of window
 
     tk.Label(used, text="Workout Program", font=("Arial", 14)).pack(pady=10)#displays the title in title font
 
-    #Squat:
-    tk.Label(used, text="Squat").pack()#shows the name of the exercise
-    tk.Label(used, text ="Target: 3 sets, 3 reps, RPE 8").pack()#shows what the user is aiming for
+     #take the exerises from the database
+    db = sqlite3.connect("powerlifting.db")
+    exercises = db.cursor().execute("SELECT name, sets, reps, rpe FROM exercises").fetchall()
+    db.close()
+ 
+    entries = {}  #stores each input box so we can save the results for later
+ 
+    for name, sets, reps, rpe in exercises:
+        tk.Label(used, text=name, font=("Arial", 11, "bold")).pack(pady=(10, 0))
+        tk.Label(used, text=f"Target: {sets} sets, {reps} reps, RPE {rpe}").pack()
+        entry = tk.Entry(used)
+        entry.pack()
+        entries[name] = entry  #links the exercise name to  the input box
+        
+        
+        
+def open_program_selection():
 
-    squat_entry = tk.Entry(used)#creates an input box for what they did in the gym
-    squat_entry.pack()#displays the input box
+    prog_win = tk.Toplevel()#prog_win=program window
+    prog_win.title("Select Program")#creates title
+    prog_win.geometry("400x300")#window size
+    prog_win.configure(bg=BG_COLOUR)#background colour
 
-    #Bench Press:
-    tk.Label(used, text="Bench Press").pack()
-    tk.Label(used, text="Target: 5 sets, 5 reps, RPE 9").pack()
+    panel = tk.Frame(prog_win, bg=PANEL_COLOUR, padx=30, pady=20)#creates a panel
+    panel.pack(pady=40)#displayes the panel
 
-    bench_entry = tk.Entry(used)
-    bench_entry.pack()
+    tk.Label(panel, text="Select Program", bg=PANEL_COLOUR, font=TITLE_FONT).pack(pady=10)
 
-    #Deadlift:
-    tk.Label(used, text="Deadlift").pack()
-    tk.Label(used, text="Target: 3 sets, 2 reps, RPE 8").pack()
+    db = sqlite3.connect("powerlifting.db")#opens the database
+    cursor = db.cursor()
 
-    deadlift_entry = tk.Entry(used)
-    deadlift_entry.pack()
-    
+    cursor.execute("SELECT id, name FROM programs")
+    programs = cursor.fetchall()#stores all of the results in a list
+
+    db.close()
+
+    for program in programs:#creates a button for every program in the database
+        tk.Button(panel, text=program[1],
+                  command=lambda id=program[0]: open_program(id)).pack(pady=5)
+        
+        
+        
+def open_program(program_id):
+
+    used = tk.Toplevel()
+    used.title("Workout program")
+    used.geometry("400x400")
+    used.configure(bg=BG_COLOUR)
+
+    panel = tk.Frame(used, bg=PANEL_COLOUR, padx=30, pady=20)
+    panel.pack(pady=40)
+
+    db = sqlite3.connect("powerlifting.db")
+    cursor = db.cursor()
+
+    cursor.execute(
+        "SELECT name, sets, reps, rpe FROM exercises WHERE program_id=?",
+        (program_id,)
+    )
+    exercises = cursor.fetchall()
+
+    db.close()
+
+    tk.Label(panel, text="Workout Program", bg=PANEL_COLOUR, font=TITLE_FONT).pack(pady=10)
+
+    entries = {}
+
+    for name, sets, reps, rpe in exercises:
+        tk.Label(panel, text=name, bg=PANEL_COLOUR, font=FONT).pack()
+        tk.Label(panel, text=f"{sets} sets, {reps} reps, RPE {rpe}", bg=PANEL_COLOUR).pack()
+
+        entry = tk.Entry(panel)
+        entry.pack(pady=5)
+
+        entries[name] = entry
+ 
 
 
 
@@ -159,15 +214,33 @@ CREATE TABLE IF NOT EXISTS programs (
 
 #exercises table
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS exercises (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    program_id INTEGER,
-    name TEXT,
-    sets INTEGER,
-    reps INTEGER,
-    rpe INTEGER
+    CREATE TABLE IF NOT EXISTS exercises (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        program_id INTEGER,
+        name        TEXT NOT NULL,
+        sets        INTEGER NOT NULL,
+        reps        INTEGER NOT NULL,
+        rpe         REAL NOT NULL
 )
 """)
+
+cursor.execute("SELECT COUNT(*) FROM programs")#checks to see if the table is empty
+if cursor.fetchone()[0] == 0:#only will run if no programs exist (prevents duplicates)
+
+    #creates a program
+    cursor.execute("INSERT INTO programs (name) VALUES (?)", ("Powerlifting Basics",))
+    program_id = cursor.lastrowid#gets the last row id of the latest program
+
+    #adds exercises linked to the program
+    cursor.executemany(
+        "INSERT INTO exercises (program_id, name, sets, reps, rpe) VALUES (?, ?, ?, ?, ?)",
+        [
+            (program_id, "Squat", 3, 3, 8.0),
+            (program_id, "Bench Press", 5, 5, 9.0),
+            (program_id, "Deadlift", 3, 2, 8.0),
+        ]
+    )
+    
 
 db.commit()
 db.close()

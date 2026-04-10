@@ -36,16 +36,14 @@ def register():
 
     try:#makes sure code doesnt crash if error occurs
         cursor.execute(
-            "INSERT INTO users (username, password) VALUES (?, ?)",#adds a new user with placeholders for safety
-            (username, hashed_password)#actual values inserted
+            "INSERT INTO users (username, password) VALUES (?, ?)",
+            (username, hashed_password)
         )
-
-        db.commit()#saves the new user
-
-        messagebox.showinfo("Success", "Your account has been created")#confirms to the user that their account was created
-
-    except sqlite3.IntegrityError:#runs if there is an error in the try block of code
-        messagebox.showerror("Error", "The username entered already exists")
+        db.commit()
+        messagebox.showinfo("Success", "Your account has been created")
+        
+    except sqlite3.IntegrityError:
+        messagebox.showerror("Error", "Username already exists")
 
     except Exception as e:
         messagebox.showerror("Error", str(e))
@@ -146,45 +144,86 @@ def open_program_selection():
 
     db.close()
 
-    for program in programs:#creates a button for every program in the database
-        tk.Button(panel, text=program[1],
-                  command=lambda id=program[0]: open_program(id)).pack(pady=5)
+    for prog_id, name in programs:
+        tk.Button(
+            panel,
+            text=name,
+            command=lambda p=prog_id: open_program(p)#locks the correct id per button
+        ).pack(pady=5)
         
         
         
-def open_program(program_id):
+def open_program(program_id):#creates a function
 
-    used = tk.Toplevel()
-    used.title("Workout program")
-    used.geometry("400x400")
-    used.configure(bg=BG_COLOUR)
+    used = tk.Toplevel()#opens a new window to show the workout
+    used.title("Workout program")#title of the window
+    used.geometry("400x400")#window size
+    used.configure(bg=BG_COLOUR)#colour of the background
 
-    panel = tk.Frame(used, bg=PANEL_COLOUR, padx=30, pady=20)
-    panel.pack(pady=40)
+    canvas = tk.Canvas(used, bg=BG_COLOUR)#creates a canvas widget, so we can scroll
+    canvas.pack(side="left", fill="both", expand=True)#displays canvas on the left side
 
-    db = sqlite3.connect("powerlifting.db")
+    scrollbar = tk.Scrollbar(used, command=canvas.yview)#creates a vertical scrollbar, and links it to canvas movement
+    scrollbar.pack(side="right", fill="y")#displays the scrollbar on the right hand side and stretches it vertically
+
+    canvas.configure(yscrollcommand=scrollbar.set)#enstres that the scrollbar updates when the user scrolls
+
+    panel = tk.Frame(canvas, bg=PANEL_COLOUR)#creates a frame inside the canvas for all of the workout content
+    canvas.create_window((0, 0), window=panel, anchor="nw")#places the panel inside the canvas
+
+    def on_configure(event):#creates a function that runs every time that the panel changes size
+        canvas.configure(scrollregion=canvas.bbox("all"))#ensures that scrolling includes everything
+
+    panel.bind("<Configure>", on_configure)#triggers the function when the panel changes size
+
+    db = sqlite3.connect("powerlifting.db")#opens the database
     cursor = db.cursor()
 
-    cursor.execute(
+    cursor.execute(#gets exercises for the program
         "SELECT name, sets, reps, rpe FROM exercises WHERE program_id=?",
-        (program_id,)
+        (program_id,)#inserts id
     )
-    exercises = cursor.fetchall()
+    exercises = cursor.fetchall()#fetches all matching exercises
 
     db.close()
 
-    tk.Label(panel, text="Workout Program", bg=PANEL_COLOUR, font=TITLE_FONT).pack(pady=10)
+    tk.Label(panel, text="Workout Program", bg=PANEL_COLOUR, font=TITLE_FONT).pack(pady=10)#page title
 
-    entries = {}
+    entries = {}#creates a dictionary to store user inputs
 
-    for name, sets, reps, rpe in exercises:
-        tk.Label(panel, text=name, bg=PANEL_COLOUR, font=FONT).pack()
-        tk.Label(panel, text=f"{sets} sets, {reps} reps, RPE {rpe}", bg=PANEL_COLOUR).pack()
+    for name, sets, reps, rpe in exercises:#loops through exercises
+        tk.Label(panel, text=name, bg=PANEL_COLOUR, font=FONT).pack()#displays exercise name
+        tk.Label(panel, text=f"{sets} sets, {reps} reps, RPE {rpe}", bg=PANEL_COLOUR).pack()#shows user what to do
 
-        entry = tk.Entry(panel)
+        entry = tk.Entry(panel)#input field
         entry.pack(pady=5)
 
-        entries[name] = entry
+        entries[name] = entry#links exercise to the input box
+    
+    tk.Button(panel, text="Save Workout",#creates a button to save the workout
+          command=lambda: save_workout(entries)).pack(pady=10)
+    
+    
+    
+def save_workout(entries):#defines a finction to save all of the workout inputs
+
+    username = enter_username.get()#links the workout to the user that completed the workout
+
+    db = sqlite3.connect("powerlifting.db")#opens dataase
+    cursor = db.cursor()
+
+    for exercise, entry in entries.items():#loopsthrough all exercises
+        result = entry.get()#gets what the user has typed
+
+        cursor.execute(#inserts data into table and uses placeholders (?) to prevent SQL injection
+            "INSERT INTO workout_logs (username, exercise, result) VALUES (?, ?, ?)",
+            (username, exercise, result)#what it stores
+        )
+
+    db.commit()#saves changes to the database
+    db.close()#closes database
+
+    messagebox.showinfo("Saved", "Workout saved successfully")#confirmation message
  
 
 
@@ -227,11 +266,11 @@ cursor.execute("""
 cursor.execute("SELECT COUNT(*) FROM programs")#checks to see if the table is empty
 if cursor.fetchone()[0] == 0:#only will run if no programs exist (prevents duplicates)
 
-    #creates a program
+    #creates program 1
     cursor.execute("INSERT INTO programs (name) VALUES (?)", ("Powerlifting Basics",))
     program_id = cursor.lastrowid#gets the last row id of the latest program
 
-    #adds exercises linked to the program
+    #adds exercises linked to program 1
     cursor.executemany(
         "INSERT INTO exercises (program_id, name, sets, reps, rpe) VALUES (?, ?, ?, ?, ?)",
         [
@@ -241,6 +280,31 @@ if cursor.fetchone()[0] == 0:#only will run if no programs exist (prevents dupli
         ]
     )
     
+    #creates program 2
+    cursor.execute("INSERT INTO programs (name) VALUES (?)", ("Advanced Powerlifting",))
+    program2_id = cursor.lastrowid
+    
+    #adds exercises linked to program 2
+    cursor.executemany(
+        "INSERT INTO exercises (program_id, name, sets, reps, rpe) VALUES (?, ?, ?, ?, ?)",
+        [
+            (program2_id, "Squat", 1, 1, 10.0),
+            (program2_id, "Squat", 3, 4, 7.0),
+            (program2_id, "Bench Press", 1, 1, 10.0),
+            (program2_id, "Bench Press", 4, 5, 8.0),
+            (program2_id, "Deadlift", 1, 1, 10.0),
+            (program2_id, "Deadlift", 4, 3, 7.0),
+        ]
+    )
+    
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS workout_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    exercise TEXT,
+    result TEXT
+)
+""")#creates a table to store workouts complated by the user
 
 db.commit()
 db.close()
